@@ -1,5 +1,8 @@
 import React, { Component } from 'react';
-import PlacesMap from './PlacesMap'
+import firebase from 'firebase'
+// import PlacesMap from './PlacesMap'
+import 'leaflet/dist/leaflet.css'
+import LeafletMap from './LeafletMap'
 import '../App.css';
 
 export default class App extends Component {
@@ -7,39 +10,32 @@ export default class App extends Component {
     super(props)
 
     this.state = {
+      authenticated: false,
       places: [
-        {
-          id: 0,
-          description: 'wussup',
-          position: { lat: 51.465772, lng: -0.164795 },
-          open: false,
-        },
       ],
-      // initialMarker: {
-      //   description: 'initial',
-      //   position: {},
-      //   open: true
-      // },
+      initialMarker: {},
     }
-
-    this.counter = 1
   }
 
   handleMapCLick = event => {
-    const newMarker = { description: '', position: event.latLng, open: true }
-    this.setState({ initialMarker: newMarker })
+    const newMarker = { description: '', position: event.latlng }
+    this.setState(() => ({ initialMarker: newMarker }))
   }
 
-  handleSave = event => {
-    console.log(this.state.initialMarker)
-    event.preventDefault()
-    this.setState({
-      places: [
-        ...this.state.places,
-        { ...this.state.initialMarker, id: this.counter++ },
-      ],
-      initialMarker: null,
+  handleSave = (e) => {
+    e.preventDefault();
+    console.log('save')
+    const timePlacedAt = new Date().toISOString()
+    firebase.database().ref(`global`).push({
+      ...this.state.initialMarker,
+      timePlacedAt: firebase.database.ServerValue.TIMESTAMP,
     })
+    .then(() => {
+      this.setState(state => ({
+        initialMarker: {},
+      }))
+    })
+    .catch(error => { console.log(error) })
   }
 
   handleDescriptionChange = event => {
@@ -48,32 +44,27 @@ export default class App extends Component {
     })
   }
 
-  toggleInfoWindow = (id) => {
-    this.setState(state => {
-      const places = [...state.places]
-      places[id] = { ...places[id], open: !places[id].open }
-      return { places }
-    })
-  }
 
-  toggleInitialMarkerInfoWindow = () => {
-    this.setState(state => ({ initialMarker: { ...state.initialMarker, open: !state.initialMarker.open } }
-    ))
+  componentDidMount() {
+    firebase.database().ref(`global`).on('value', (data) => {
+      const places = Object.values(data.val()).map((place, index) => ({
+        ...place,
+        key: Object.keys(data.val())[index],
+      }))
+      console.log(places)
+      this.setState(state => ({ places }))
+    })
   }
 
   render() {
     return (
       <div className="App">
-        <PlacesMap
-          containerElement={<div style={{ height: '100%', width: '100%' }} />}
-          mapElement={<div style={{ height: '501px', width: '100%' }} />}
+        <LeafletMap
           onMapClick={this.handleMapCLick}
-          markers={this.state.places}
           submit={this.handleSave}
-          onInputChange={this.handleDescriptionChange}
-          onPlaceClick={this.toggleInfoWindow}
+          onInput={this.handleDescriptionChange}
+          places={this.state.places}
           initialMarker={this.state.initialMarker}
-          onInitialClick={this.toggleInitialMarkerInfoWindow}
         />
         <h1 style={{ textAlign: 'center' }} >Places</h1>
       </div>
