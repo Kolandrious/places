@@ -25,7 +25,7 @@ export default props => {
         />
         { props.places.map(place => (
           <Marker key={place.key} position={place.position} title={place.description} icon={icon}>
-            <Popup><div>{place.description}</div></Popup>
+            <Popup><div>{place.description} / {(new Date(place.timestamp)).toLocaleString()}</div></Popup>
           </Marker>
         ))}
         { props.initialMarker.position &&

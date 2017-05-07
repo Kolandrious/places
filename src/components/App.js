@@ -25,10 +25,9 @@ export default class App extends Component {
   handleSave = (e) => {
     e.preventDefault();
     console.log('save')
-    const timePlacedAt = new Date().toISOString()
     firebase.database().ref(`global`).push({
       ...this.state.initialMarker,
-      timePlacedAt: firebase.database.ServerValue.TIMESTAMP,
+      timestamp: firebase.database.ServerValue.TIMESTAMP,
     })
     .then(() => {
       this.setState(state => ({
